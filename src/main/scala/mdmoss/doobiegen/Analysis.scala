@@ -370,8 +370,11 @@ class Analysis(val model: DbModel, val target: Target) {
     field.source.head.references match {
       case None => 1
       case Some(ref) =>
-        val lower = model.tables.find(_.ref == ref.table).get
-        val lowerField = rowNewType(lower)._1.find(_.source.head.sqlName == ref.column)
+        val lowerField = for {
+          lower <- model.tables.find(_.ref == ref.table)
+          lowerField <- rowNewType(lower)._1.find(_.source.head.sqlName == ref.column)
+        } yield lowerField
+
         lowerField match {
           case None => 2
           case Some(f) => 1 + unwrapsNeeded(f)
