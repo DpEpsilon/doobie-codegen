@@ -568,6 +568,7 @@ class Analysis(val model: DbModel, val target: Target) {
   def update(table: Table): Option[Update] =  pkNewType(table).map { pk =>
 
     val row = rowNewType(table)
+    val shape = rowShape(table)
     val params = Seq(FunctionParam("row", row._2))
 
     val innerUpdates = row._1.map(f =>
@@ -590,6 +591,17 @@ class Analysis(val model: DbModel, val target: Target) {
       s"""updateInner(row).run"""
 
     val outer = FunctionDef(None, "update", params, "ConnectionIO[Int]", outerBody)
+
+    val singlePk = pk._1.head
+    val shapeAndIdParams = Seq(
+      FunctionParam(singlePk.scalaName, singlePk.scalaType),
+      FunctionParam("shape", shape._2)
+    )
+
+    val outerByShapeBody =
+      s"""updateInner(${row._2.symbol}(${singlePk.scalaName}, ${shape._1.map(s => s"shape.${s.scalaName}: ${s.scalaType}").mkString(", ")})).run"""
+
+    val outerByShape = FunctionDef(None, "update", shapeAndIdParams, "ConnectionIO[Int]", outerByShapeBody)
 
     Update(inner, outer)
   }
