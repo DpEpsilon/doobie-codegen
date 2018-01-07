@@ -336,7 +336,7 @@ class Generator(analysis: Analysis) {
 
   def genPkNewType(table: Table): String = {
     a.pkNewType(table).map { pk =>
-      s"case class ${pk._2.symbol}(${pk._1.map(f => s"${f.scalaName}: ${f.scalaType.qualifiedSymbol}").mkString(", ")})"
+      s"case class ${pk._2.symbol}(${pk._1.map(f => s"${f.scalaName}: ${f.scalaType.qualifiedSymbol}").mkString(", ")}) extends AnyVal"
     }.getOrElse("")
   }
 
