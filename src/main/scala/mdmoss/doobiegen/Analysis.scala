@@ -436,19 +436,15 @@ class Analysis(val model: DbModel, val target: Target) {
 
     val where = "WHERE " + (pkNewType(table).map { pk =>
       val arrayName = pk._1.head.source.head.scalaName
+      val matchSeq = s"{${arrayName}}.toSeq"
 
-      val unwraps = List.fill(unwrapsNeeded(pk._1.head))("value").mkString(".")
-      val matchArray = s"$${{${arrayName}}.toSeq.flatten.map(_.$unwraps).toArray}"
-
-      s"($${$arrayName.isEmpty} OR ${pk._1.head.source.head.sqlNameInTable(table)} = ANY($matchArray))"
+      s"""($${$arrayName.isEmpty} OR \"\"\" ++ Fragments.in(fr\"${pk._1.head.source.head.sqlNameInTable(table)}\", $matchSeq) ++ sql\"\"\")"""
     }.toList ++ multigetColumns.zipWithIndex.flatMap {
       case (c@Column(colName, colType, copProps), i) if c.reference.isDefined && !c.isNullible && !c.isPrimaryKey =>
-        val rowRep = rowType._1.find(_.source.head == c).get
-        val unwraps = List.fill(unwrapsNeeded(rowRep) - 1)("value").mkString(".")
-        val matchArray = s"$${{${c.scalaName}}.toSeq.flatten.map(_.${unwraps}).toArray}"
+        val matchSeq = s"{${c.scalaName}}.toSeq"
 
         Seq(
-          s"($${${c.scalaName}.isEmpty} OR ${c.sqlNameInTable(table)} = ANY($matchArray))"
+          s"""($${${c.scalaName}.isEmpty} OR \"\"\" ++ Fragments.in(fr\"${c.sqlNameInTable(table)}\", $matchSeq) ++ sql\"\"\")"""
         )
       case _ => Seq()
     }
