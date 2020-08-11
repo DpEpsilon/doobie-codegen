@@ -1,6 +1,6 @@
 val commonSettings = Seq(
   organization := "mdmoss",
-  scalaVersion := "2.11.12",
+  scalaVersion := "2.12.12",
   scalacOptions ++= Seq("-deprecation", "-feature"),
   scalacOptions in Test ++= Seq("-Yrangepos")
 )
