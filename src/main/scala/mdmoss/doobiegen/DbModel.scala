@@ -2,14 +2,14 @@ package mdmoss.doobiegen
 
 import mdmoss.doobiegen.sql.{Ignored, _}
 
-case class DbModel(tables: Seq[sql.Table])
+case class DbModel(tables: Seq[sql.Table], customTypes: Seq[sql.CustomType])
 
 /* This can probably be cleaned up a lot using lenses */
 object DbModel {
 
   class UnhandledModelChangeException(message: String) extends Exception(message)
 
-  def empty = DbModel(Seq())
+  def empty = DbModel(Seq(), Seq())
 
   def update(model: DbModel, sql: Statement): DbModel = sql match {
 

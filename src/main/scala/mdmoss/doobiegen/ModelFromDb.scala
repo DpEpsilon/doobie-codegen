@@ -112,7 +112,7 @@ class ModelFromDb(target: Runner.Target) {
 
     val nonEmptyTables = modelTables.filter(_.columns.nonEmpty)
 
-    DbModel(nonEmptyTables)
+    DbModel(nonEmptyTables, Seq())
   }
 
   def getDataType(column: db.information_schema.gen.Columns.Row): Option[sql.Type] = {

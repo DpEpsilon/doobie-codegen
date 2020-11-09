@@ -73,6 +73,8 @@ object sql {
     val nonSingularPrimaryKeyColumns = columns.filterNot(_.isSingularPrimaryKey)
   }
 
+  sealed trait CustomType
+
   sealed trait ColumnProperty
   case object Null                                       extends ColumnProperty
   case object NotNull                                    extends ColumnProperty
