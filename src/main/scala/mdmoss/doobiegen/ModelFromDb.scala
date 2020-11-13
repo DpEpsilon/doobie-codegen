@@ -24,8 +24,11 @@ class ModelFromDb(target: Runner.Target) {
     tableConstraints <- db.information_schema.gen.TableConstraints.allUnbounded()
     keyColumnUsage <- db.information_schema.gen.KeyColumnUsage.allUnbounded()
     referentialConstraints <- db.information_schema.gen.ReferentialConstraints.allUnbounded()
+    enums <- db.CatalogQueries.getEnums()
 
   } yield {
+    val customTypes = enums.map(e => sql.Enum(e.typeName, e.values.toList))
+
     val columnsMap = columns.groupBy(_.tableSchema).mapValues(_.groupBy(_.tableName))
     val tableConstraintsMap = tableConstraints.groupBy(_.tableSchema).mapValues(_.groupBy(_.tableName))
     val keyColumnUsageMap = keyColumnUsage.groupBy(_.tableSchema).mapValues(_.groupBy(_.tableName))
@@ -112,7 +115,7 @@ class ModelFromDb(target: Runner.Target) {
 
     val nonEmptyTables = modelTables.filter(_.columns.nonEmpty)
 
-    DbModel(nonEmptyTables, Seq())
+    DbModel(nonEmptyTables, customTypes)
   }
 
   def getDataType(column: db.information_schema.gen.Columns.Row): Option[sql.Type] = {

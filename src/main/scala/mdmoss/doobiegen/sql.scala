@@ -74,6 +74,7 @@ object sql {
   }
 
   sealed trait CustomType
+  case class Enum(name: String, values: List[String]) extends CustomType
 
   sealed trait ColumnProperty
   case object Null                                       extends ColumnProperty
