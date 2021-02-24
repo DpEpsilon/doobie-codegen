@@ -47,7 +47,9 @@ class ModelFromDb(target: Runner.Target) {
       val tableConstraints = tableConstraintsMap.get(table.tableSchema).flatMap(_.get(table.tableName)).getOrElse(List.empty)
       val tableKeyColumnUsage = keyColumnUsageMap.get(table.tableSchema).flatMap(_.get(table.tableName)).getOrElse(List.empty)
 
-      val columnsWithTypes = orderedTableColumns.map { c => (c, getDataType(c)) }.collect { case (c, Some(dt)) => (c, dt) }
+      val columnsWithTypes = orderedTableColumns
+        .map { c => (c, getDataType(c, customTypes)) }
+        .collect { case (c, Some(dt)) => (c, dt) }
 
       val primaryKeyConstraints = tableConstraints.filter(_.constraintType.contains("PRIMARY KEY")).flatMap(_.constraintName)
       val uniqueConstraints = tableConstraints.filter(_.constraintType.contains("UNIQUE")).flatMap(_.constraintName)
@@ -118,7 +120,10 @@ class ModelFromDb(target: Runner.Target) {
     DbModel(nonEmptyTables, customTypes)
   }
 
-  def getDataType(column: db.information_schema.gen.Columns.Row): Option[sql.Type] = {
+  def getDataType(
+    column: db.information_schema.gen.Columns.Row,
+    customTypes: Seq[sql.CustomType],
+  ): Option[sql.Type] = {
     column.dataType.flatMap { dataType =>
       val parser = new SqlStatementParser(dataType)
       parser.Type.run().toOption match {
@@ -131,6 +136,11 @@ class ModelFromDb(target: Runner.Target) {
         } else {
           st
         }
+        case None if dataType == "USER-DEFINED" =>
+          column.udtName.flatMap { udtName =>
+            customTypes.find(t => t.name == udtName)
+              .map(t => sql.UserDefinedType(t.name))
+          }
         case None =>
           if (!target.quiet) {
             println(s"Unknown data type: ${dataType}");

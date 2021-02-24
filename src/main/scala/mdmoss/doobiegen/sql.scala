@@ -19,6 +19,7 @@ object sql {
   case object SmallInt        extends Type("smallint")
   case object Uuid            extends Type("uuid")
   case class  Decimal(precision: Long, scale: Long) extends Type("decimal")
+  case class  UserDefinedType(name: String) extends Type("USER-DEFINED")
 
   sealed trait TableProperty
 
@@ -73,8 +74,8 @@ object sql {
     val nonSingularPrimaryKeyColumns = columns.filterNot(_.isSingularPrimaryKey)
   }
 
-  sealed trait CustomType
-  case class Enum(name: String, values: List[String]) extends CustomType
+  sealed abstract class CustomType(val name: String)
+  case class Enum(override val name: String, values: List[String]) extends CustomType(name)
 
   sealed trait ColumnProperty
   case object Null                                       extends ColumnProperty

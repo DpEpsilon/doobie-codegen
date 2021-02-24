@@ -678,6 +678,10 @@ class Analysis(val model: DbModel, val target: Target) {
             case sql.SmallInt        => ScalaType("Short", "0.toShort", None)
             case sql.Time            => ScalaType("Time", "new Time(0L)", None)
             case sql.Uuid            => ScalaType("UUID", "UUID.randomUUID()", None)
+            case sql.UserDefinedType(name) => {
+              val symbol = makeSafe(name.camelCase)
+              ScalaType(symbol, symbol ++ ".arb", Some("db.gen.types"))
+            }
           }
       }
 
