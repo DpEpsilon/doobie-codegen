@@ -139,7 +139,7 @@ class ModelFromDb(target: Runner.Target) {
         case None if dataType == "USER-DEFINED" =>
           column.udtName.flatMap { udtName =>
             customTypes.find(t => t.name == udtName)
-              .map(t => sql.UserDefinedType(t.name))
+              .map(t => sql.UserDefinedType(t))
           }
         case None =>
           if (!target.quiet) {

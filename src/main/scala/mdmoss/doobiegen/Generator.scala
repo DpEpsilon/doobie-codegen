@@ -252,7 +252,48 @@ class Generator(analysis: Analysis) {
       )
     }
 
-    tableFiles ++ testFiles ++ packageObjects
+    val customTypeFiles = db.customTypes.map {
+      case e @ sql.Enum(name, _) => {
+        val (vals, t) = a.enumNewType(e)
+
+        val caseObjects = vals.map(v =>
+          s"""  case object ${v.scalaName} extends ${t.symbol} { def str: String = "${v.str}" }"""
+        ).mkString("\n")
+        val metaCases = vals.map(v =>
+          s"""      case "${v.str}" => ${v.scalaName}"""
+        ).mkString("\n")
+
+        val contents =
+          s"""package ${t.`package`.get}
+             |
+             |sealed trait ${t.symbol} {
+             |  def str: String
+             |}
+             |
+             |object ${t.symbol} {
+             |${caseObjects}
+             |
+             |  implicit def meta: doobie.imports.Meta[${t.symbol}] = doobie.postgres.pgtypes.pgEnumString(
+             |    "${name}",
+             |    {
+             |${metaCases}
+             |      case s => throw doobie.util.invariant.InvalidEnum[${t.symbol}](s)
+             |    },
+             |    _.str,
+             |  )
+             |}
+             |""".stripMargin
+
+        File(
+          t.`package`.get,
+          s"${t.symbol}.scala",
+          contents,
+          false
+        )
+      }
+    }
+
+    tableFiles ++ testFiles ++ packageObjects ++ customTypeFiles
   }
 
   def getTypes(table: Table): Set[sql.Type] = {

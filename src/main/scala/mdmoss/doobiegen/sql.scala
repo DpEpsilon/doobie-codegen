@@ -19,7 +19,7 @@ object sql {
   case object SmallInt        extends Type("smallint")
   case object Uuid            extends Type("uuid")
   case class  Decimal(precision: Long, scale: Long) extends Type("decimal")
-  case class  UserDefinedType(name: String) extends Type("USER-DEFINED")
+  case class  UserDefinedType(customType: CustomType) extends Type("USER-DEFINED")
 
   sealed trait TableProperty
 

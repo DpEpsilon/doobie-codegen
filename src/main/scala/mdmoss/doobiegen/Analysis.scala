@@ -1,8 +1,8 @@
 package mdmoss.doobiegen
 
-import mdmoss.doobiegen.GenOptions.{AlwaysInsertDefault, GenOption, NoWrite, IgnoreDefault}
+import mdmoss.doobiegen.GenOptions.{AlwaysInsertDefault, GenOption, IgnoreDefault, NoWrite}
 import mdmoss.doobiegen.Runner.Target
-import mdmoss.doobiegen.sql.{Column, Table, TableRef}
+import mdmoss.doobiegen.sql.{Column, Enum, Table, TableRef}
 
 case class RowRepField(sourceTable: Table, source: List[Column], scalaName: String, scalaType: ScalaType, defaultValue: Option[String] = None)
 
@@ -29,6 +29,8 @@ case class BaseMultiget(fn: FunctionDef)
 case class MultiGet(inner: FunctionDef)
 
 case class Update(inner: FunctionDef, outer: FunctionDef)
+
+case class EnumValue(scalaName: String, str: String)
 
 object Analysis {
 
@@ -135,6 +137,13 @@ class Analysis(val model: DbModel, val target: Target) {
     val parts = pkPart.toList ++ table.nonSingularPrimaryKeyColumns.map(_.scalaRep(table))
     val arb = merge("Row", parts.map(_.scalaType))
     (parts, ScalaType("Row", arb, Some(fullTarget(table))))
+  }
+
+  def enumNewType(enum: sql.Enum): (List[EnumValue], ScalaType) = {
+    val values = `enum`.values.map(s => EnumValue(s.camelCase.capitalize, s))
+    val symbol = `enum`.name.camelCase.capitalize
+    val arb = s"${symbol}.${values.head.scalaName}"
+    (values, ScalaType(symbol, arb, Some(target.`package` + ".gen.types")))
   }
 
   /**
@@ -678,9 +687,10 @@ class Analysis(val model: DbModel, val target: Target) {
             case sql.SmallInt        => ScalaType("Short", "0.toShort", None)
             case sql.Time            => ScalaType("Time", "new Time(0L)", None)
             case sql.Uuid            => ScalaType("UUID", "UUID.randomUUID()", None)
-            case sql.UserDefinedType(name) => {
-              val symbol = makeSafe(name.camelCase)
-              ScalaType(symbol, symbol ++ ".arb", Some("db.gen.types"))
+            case sql.UserDefinedType(customType) => {
+              customType match {
+                case e @ Enum(_, _) => enumNewType(e)._2
+              }
             }
           }
       }
